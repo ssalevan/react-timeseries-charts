@@ -15,6 +15,7 @@ import _ from "underscore";
 import Moment from "moment";
 import APIDocs from "./docs";
 import Highlighter from "./highlighter";
+import { format } from "d3-format";
 
 // Pond
 import { TimeSeries } from "pondjs";
@@ -62,7 +63,36 @@ export default React.createClass({
 
     mixins: [Highlighter],
 
+    getInitialState() {
+        return {
+            hover: null,
+            highlight: null,
+            selection: null
+        };
+    },
+
+    handleHover(event) {
+        this.setState({hover: event});
+    },
+
+    handleTrackerChanged(t) {
+        this.setState({
+            highlight: t ? series.at(series.bisect(t)) : null
+        });
+    },
+
+    handleSelectionChanged(event) {
+        this.setState({
+            selection: event
+        });
+    },
+
     render() {
+        const formatter = format(".2f");
+        const text = this.state.highlight ?
+            `Speed: ${formatter(this.state.highlight.get())} mph,
+time: ${this.state.highlight.timestamp().toLocaleTimeString()}` :
+            `Speed: - mph, time: -:--`;
         return (
             <div>
                 <div className="row">
@@ -75,13 +105,46 @@ export default React.createClass({
 
                 <div className="row">
                     <div className="col-md-12">
+                        {text}
+                    </div>
+                </div>
+
+                <hr />
+
+                <div className="row">
+                    <div className="col-md-12">
                         <Resizable>
-                            <ChartContainer timeRange={series.range()}>
+                            <ChartContainer
+                                timeRange={series.range()}
+                                onTrackerChanged={this.handleTrackerChanged}>
                                 <ChartRow height="150" debug={false}>
                                     <YAxis id="wind-gust" label="Wind gust (mph)" labelOffset={-5}
                                            min={0} max={series.max()} width="70" type="linear" format=",.1f"/>
                                     <Charts>
-                                        <ScatterChart axis="wind-gust" series={series} style={{color: "steelblue", opacity: 0.5}} />
+                                        <ScatterChart
+                                            axis="wind-gust"
+                                            series={series}
+                                            style={event => ({
+                                                normal: {
+                                                    fill: "green",
+                                                    opacity: event.get("radius")/5
+                                                },
+                                                hover: {
+                                                    fill: "ltgreen",
+                                                    stroke: "green",
+                                                    opacity: 1.0
+                                                },
+                                                selected: {
+                                                    fill: "orange",
+                                                    stroke: "orange",
+                                                    strokeWidth: 3,
+                                                    opacity: 1.0
+                                                }
+                                            })}
+                                            format=".1f"
+                                            selection={this.state.selection}
+                                            onSelectionChange={this.handleSelectionChanged}                                            highlight={this.state.highlight}
+                                            radius={event => event.get("radius")}/>
                                     </Charts>
                                 </ChartRow>
                             </ChartContainer>

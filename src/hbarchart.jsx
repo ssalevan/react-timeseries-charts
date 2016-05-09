@@ -10,7 +10,7 @@
 
 import React from "react";
 import _ from "underscore";
-import FlexBox from "react-flexbox";
+import { Flexbox, FlexItem } from "flexbox-react";
 
 //d3
 import { scaleLinear } from "d3-scale";
@@ -84,13 +84,25 @@ const RangeBar = React.createClass({
 
     displayName: "RangeBar",
 
-    shouldComponentUpdate(nextProps) {
-        const seriesChanged = !TimeSeries.is(this.props.series, nextProps.series);
-        const scaleChanged = scaleAsString(this.props.scale) !== scaleAsString(nextProps.scale);
-        return seriesChanged || scaleChanged;
+    shouldComponentUpdate({ series, scale }) {
+        console.log("RangeBar: shouldComponentUpdate", series, scaleAsString(scale));
+        return false;
+
+        // const seriesChanged = !TimeSeries.is(this.props.series, nextProps.series);
+        // const scaleChanged = scaleAsString(this.props.scale) !== scaleAsString(nextProps.scale);
+        // console.log("Update?", seriesChanged, scaleChanged);
+        // return seriesChanged || scaleChanged;
     },
 
     render() {
+
+        console.log("Render RangeBar", this.props);
+
+        return (
+            <g />
+        );
+
+        /*
         const {
             series,
             column,
@@ -108,10 +120,10 @@ const RangeBar = React.createClass({
         const stdev = series.stdev(column);
 
         let seriesMin = series.min(column);
-        if (_.isNull(seriesMin)) seriesMin = 0;
+        if (_.isUndefined(seriesMin)) seriesMin = 0;
 
         let seriesMax = series.max(column);
-        if (_.isNull(seriesMax)) seriesMax = 0;
+        if (_.isUndefined(seriesMax)) seriesMax = 0;
 
         const start = scale(seriesMin);
         const end = scale(seriesMax);
@@ -125,10 +137,20 @@ const RangeBar = React.createClass({
         if (centerWidth <= 1) centerWidth = 1;
 
         const barElementBackground = (
-            <rect style={bgstyle} rx={2} ry={2} x={start} y={1} width={backgroundWidth} height={size-2} />
+            <rect
+                style={bgstyle}
+                rx={2} ry={2}
+                x={start} y={1}
+                width={backgroundWidth}
+                height={size-2} />
         );
         const barElementCenter = (
-            <rect style={fgstyle} x={centerStart} y={0} width={centerWidth} height={size} />
+            <rect
+                style={fgstyle}
+                x={centerStart}
+                y={0}
+                width={centerWidth}
+                height={size} />
         );
 
         return (
@@ -137,6 +159,7 @@ const RangeBar = React.createClass({
                 {barElementCenter}
             </g>
         );
+        */
     }
 });
 
@@ -254,20 +277,7 @@ const Bars = React.createClass({
                 case "range":
                     return (
                         <g transform={transform}>
-                            <RangeBar
-                                series={series}
-                                column={column}
-                                bgstyle={rectStyleBackground}
-                                fgstyle={rectStyleCenter}
-                                style={style}
-                                scale={scale}
-                                size={size} />
-                            <Marker
-                                value={value}
-                                scale={scale}
-                                format={format}
-                                size={size}
-                                style={rectStyleValue} />
+                            <RangeBar />
                         </g>
                     );
             }
@@ -351,12 +361,10 @@ const Row = React.createClass({
         } = this.props;
 
         const rowStyle = {
-            width: "100%",
-            boxShadow: "inset 11px 0px 7px -9px rgba(0,0,0,0.28)"
+            width: "100%"
         };
 
         const resizableStyle = {
-            margin: 3
         };
 
         return (
@@ -364,6 +372,7 @@ const Row = React.createClass({
                 style={rowStyle}
                 onMouseEnter={() => this.setState({hover: true})}
                 onMouseLeave={() => this.setState({hover: false})} >
+
                 <Resizable style={resizableStyle}>
                     <Bars
                         display={display}
@@ -436,22 +445,22 @@ const Row = React.createClass({
         }
 
         return (
-            <FlexBox column
+            <Flexbox
+                key={Math.random()}
+                style={rowStyle}
+                flexDirection="row"
                 onMouseEnter={() => this.setState({hover: true})}
                 onMouseLeave={() => this.setState({hover: false})}
                 onClick={this.handleClick} >
-                <FlexBox key={series.name()} row style={rowStyle}>
-                    <FlexBox
-                        column width="220px"
-                        style={labelStyle} >
+
+                    <FlexItem minWidth="220px" style={labelStyle} >
                         {this.renderLabel(series)}
-                    </FlexBox>
-                    <FlexBox column>
+                    </FlexItem>
+                    <FlexItem flexGrow={1}>
                         {this.renderBars()}
-                        {this.renderChild()}
-                     </FlexBox>
-                </FlexBox>
-            </FlexBox>
+                        {/*this.renderChild()*/}
+                    </FlexItem>
+            </Flexbox>
         );
     }
 });

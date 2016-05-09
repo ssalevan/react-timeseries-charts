@@ -9,7 +9,7 @@
  */
 
 import React from "react";
-import FlexBox from "react-flexbox";
+import { Flexbox, FlexItem } from "flexbox-react";
 import merge from "merge";
 
 /**
@@ -170,12 +170,14 @@ export default React.createClass({
     render() {
 
         const baseLabelStyle = {
-            paddingRight: 15
+            paddingRight: 15,
+            cursor: "pointer"
         };
 
         const baseValueStyle = {
             fontSize: "1.2rem",
-            color: "#999"
+            color: "#999",
+            cursor: "pointer"
         };
 
         const items = this.props.categories.map(category => {
@@ -202,34 +204,38 @@ export default React.createClass({
             const valueStyle = merge(true, baseValueStyle, categoryValueStyle);
 
             return (
-                <FlexBox
-                    column
-                    width={0}
-                    key={category.key}
-                    onClick={() => this.handleClick(category.key, !disabled)}>
-                    <FlexBox row>
-                        <FlexBox column style={{marginTop: 2}} width="20px">
+                <Flexbox flexDirection="column"
+                         key={category.key}>
+                    <div onClick={() => this.handleClick(category.key, !disabled)}>
+                    <Flexbox flexDirection="row">
+                        <FlexItem width="20px">
                             {symbol}
-                        </FlexBox>
-                        <FlexBox column>
-                            <FlexBox row style={labelStyle}>
-                                {category.label}
-                            </FlexBox>
-                            <FlexBox row style={valueStyle}>
-                                {category.value}
-                            </FlexBox>
-                        </FlexBox>
-                    </FlexBox>
-                </FlexBox>
+                        </FlexItem>
+                        <Flexbox flexDirection="column">
+                            <FlexItem>
+                                <div style={labelStyle}>
+                                    {category.label}
+                                </div>
+                            </FlexItem>
+                            <FlexItem>
+                                <div style={valueStyle}>
+                                    {category.value}
+                                </div>
+                            </FlexItem>
+                        </Flexbox>
+                    </Flexbox>
+                    </div>
+                </Flexbox>
             );
         });
 
-        const align = this.props.align === "left" ? "flex-start" : "flex-end";
+        const align = this.props.align === "left" ?
+            "flex-start" : "flex-end";
 
         return (
-            <FlexBox style={{justifyContent: align}}>
+            <Flexbox justifyContent={align}>
                 {items}
-            </FlexBox>
+            </Flexbox>
         );
     }
 });

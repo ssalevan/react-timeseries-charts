@@ -1060,6 +1060,24 @@
           "value": "{\n    color: \"steelblue\",\n    opacity: 1\n}",
           "computed": false
         }
+      },
+      "hintStyle": {
+        "defaultValue": {
+          "value": "{\n    line: {\n        stroke: \"#AAA\",\n        cursor: \"crosshair\"\n    },\n    box: {\n        fill: \"white\",\n        opacity: 0.85,\n        stroke: \"#AAA\"\n    }\n}",
+          "computed": false
+        }
+      },
+      "hintWidth": {
+        "defaultValue": {
+          "value": "90",
+          "computed": false
+        }
+      },
+      "hintHeight": {
+        "defaultValue": {
+          "value": "30",
+          "computed": false
+        }
       }
     }
   },

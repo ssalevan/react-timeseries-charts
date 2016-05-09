@@ -12,7 +12,6 @@ import React from "react";
 import { format } from "d3-format";
 import _ from "underscore";
 import merge from "merge";
-
 import { TimeSeries } from "pondjs";
 
 const defaultStyle = {
@@ -178,6 +177,7 @@ export default React.createClass({
             let ypos = yScale(0);
             if (columns) {
                 for (const column of columns) {
+                    
                     const index = event.index();
                     const key = `${series.name()}-${index}-${column}`;
                     const value = event.get(column);

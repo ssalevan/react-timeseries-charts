@@ -12,7 +12,13 @@
 
 import React from "react";
 import { render } from "react-dom";
-import { Router, Route, IndexRoute } from "react-router";
+import { Router, IndexRoute, Route, useRouterHistory } from "react-router";
+import createBrowserHistory from "history/lib/createBrowserHistory";
+import useScroll from "scroll-behavior/lib/useStandardScroll";
+
+const browserHistory = useScroll(
+    useRouterHistory(createBrowserHistory)
+)();
 
 import App from "./app";
 import Intro from "./intro";
@@ -34,13 +40,8 @@ import Table from "./table";
 import Channels from "./channels";
 import Horizontal from "./horizontal";
 
-import createHistory from "history/lib/createHashHistory";
-import useScroll from "scroll-behavior/lib/useStandardScroll";
-
-const history = useScroll(createHistory)();
-
 render((
-    <Router history={history}>
+    <Router history={browserHistory}>
         <Route path="/" component={App}>
             <IndexRoute component={Intro}/>
             <Route path="chartcontainer" component={ChartContainer} />

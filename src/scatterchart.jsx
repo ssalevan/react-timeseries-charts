@@ -9,17 +9,20 @@
  */
 
 import React from "react";
-import ReactDOM from "react-dom";
-import d3 from "d3";
 import _ from "underscore";
+import { format } from "d3-format";
+import { timeFormat } from "d3-time-format";
+import merge from "merge";
+import { Event, TimeSeries } from "pondjs";
 
-import { TimeSeries } from "pondjs";
+import ValueList from "./valuelist";
 
-import "./scatterchart.css";
-
-function scaleAsString(scale) {
-    return `${scale.domain()}-${scale.range()}`;
-}
+const defaultStyle = {
+    normal: {fill: "steelblue"},
+    highlight: {fill: "#5a98cb"},
+    selected: {fill: "yellow"},
+    text: {fill: "#333", stroke: "none"}
+};
 
 /**
  * The `<ScatterChart >` widget is able to display a single series
@@ -49,10 +52,26 @@ export default React.createClass({
     getDefaultProps() {
         return {
             radius: 2.0,
+
             style: {
                 color: "steelblue",
                 opacity: 1
-            }
+            },
+
+            hintStyle: {
+                line: {
+                    stroke: "#AAA",
+                    cursor: "crosshair"
+                },
+                box: {
+                    fill: "white",
+                    opacity: 0.85,
+                    stroke: "#AAA"
+                }
+            },
+
+            hintWidth: 90,
+            hintHeight: 30
         };
     },
 
@@ -87,95 +106,209 @@ export default React.createClass({
             color: React.PropTypes.string,
             opacity: React.PropTypes.number
         })
-
     },
 
-    renderScatterChart(series, timeScale, yScale, radius) {
-
-        let data = series.toJSON().points;
-
-        if (!yScale || !data[0]) {
-            return null;
-        }
-
-        if (this.props.dropNulls) {
-            data = _.filter(data, d => (d.value !== null) );
-        }
-
-        const style = {
-            fill: this.props.style.color || "steelblue",
-            fillOpacity: this.props.style.opacity || 1.0,
-            stroke: "none"
+    /**
+     * hover state is tracked internally and a highlight shown as a result
+     */
+    getInitialState() {
+        return {
+            hover: null
         };
-
-        d3.select(ReactDOM.findDOMNode(this)).selectAll("*").remove();
-
-        this.scatter = d3.select(ReactDOM.findDOMNode(this)).selectAll("dot")
-                .data(data)
-            .enter().append("circle")
-                .style(style)
-                .attr("r", d => d[2] ? d[2] : radius)
-                .attr("cx", d => timeScale(d[0]))
-                .attr("cy", d => yScale(d[1]))
-                .attr("clip-path",this.props.clipPathURL);
     },
 
-    updateScatterChart(series, timeScale, yScale, radius) {
-        const data = series.toJSON().points;
-        this.scatter
-            .data(data)
-            .transition()
-                .duration(this.props.transiton)
-                .ease("sin-in-out")
-                .attr("r", d => d[2] ? d[2] : radius)
-                .attr("cx", d => timeScale(d[0]))
-                .attr("cy", d => yScale(d[1]));
+    /**
+     * Continues a hover event on a specific bar of the bar chart.
+     */
+    handleMouseMove(e, event) {
+        this.setState({hover: event});
+        if (this.props.onMouseMove) {
+            this.props.onMouseMove(event);
+        }
     },
 
-    componentDidMount() {
-        this.renderScatterChart(this.props.series,
-                                this.props.timeScale,
-                                this.props.yScale,
-                                this.props.radius,
-                                this.props.classed);
-
+    handleMouseLeave() {
+        this.setState({hover: null});
+        if (this.props.onMouseLeave) {
+            this.props.onMouseLeave(null);
+        }
     },
 
-    componentWillReceiveProps(nextProps) {
-        const series = nextProps.series;
-        const timeScale = nextProps.timeScale;
-        const yScale = nextProps.yScale;
-        const radius = nextProps.radius;
+    handleClick(e, event) {
+        if (this.props.onSelectionChange) {
+            this.props.onSelectionChange(event);
+        }
+    },
 
-        // What changed
-        const timeScaleChanged =
-            (scaleAsString(this.props.timeScale) !== scaleAsString(timeScale));
-        const yAxisScaleChanged =
-            (scaleAsString(this.props.yScale) !== scaleAsString(yScale));
-        const defaultRadiusChanged = (this.props.radius !== radius);
-        const seriesChanged = TimeSeries.is(this.props.series, series);
+    renderTrackerTime(d) {
+        const textStyle = {
+            fontSize: 11,
+            textAnchor: "left",
+            fill: "#bdbdbd"
+        };
+        const format = timeFormat("%X");
+        let dateStr = format(d);
 
-        //
-        // Currently if the series changes we completely rerender it.
-        // If the y axis scale changes then we just update the existing
-        // paths using a transition so that we can get smooth axis transitions.
-        //
+        return (
+            <text x={0} y={0} dy="1.2em" style={textStyle}>
+                {dateStr}
+            </text>
+        );
+    },
 
-        if (seriesChanged || timeScaleChanged || defaultRadiusChanged) {
-            this.renderScatterChart(series, timeScale, yScale, radius);
-        } else if (yAxisScaleChanged) {
-            this.updateScatterChart(series, timeScale, yScale, radius);
+    renderHint(time, posx, posy, valueList) {
+        const w = this.props.hintWidth;
+
+        const horizontalMark = (
+            <line
+                style={this.props.hintStyle.line}
+                x1={-10} y1={posy - 10}
+                x2={0} y2={posy - 10} />
+        );
+
+        if (valueList) {
+            if (posx + 10 + w < this.props.width - 300) {
+                const verticalConnector = (
+                    <line
+                        style={this.props.hintStyle.line}
+                        x1={0} y1={posy - 10}
+                        x2={0} y2={20} />
+                );
+                return (
+                    <g transform={`translate(${posx + 10},${10})`} >
+                        {horizontalMark}
+                        {verticalConnector}
+                        {this.renderTrackerTime(time)}
+                        <g transform={`translate(0,${20})`}>
+                            <ValueList
+                                align="left"
+                                values={valueList}
+                                style={this.props.hintStyle.box}
+                                width={this.props.hintWidth}
+                                height={this.props.hintHeight} />
+                        </g>
+                    </g>
+                );
+            } else {
+                const verticalConnector = (
+                    <line
+                        style={this.props.hintStyle.line}
+                        x1={0} y1={posy - 10}
+                        x2={0} y2={20} />
+                );
+                return (
+                    <g transform={`translate(${posx - w - 10},${10})`} >
+                        {horizontalMark}
+                        {verticalConnector}
+                        {this.renderTrackerTime(time)}
+                        <g transform={`translate(0,${20})`}>
+                            <ValueList
+                                align="left"
+                                values={valueList}
+                                style={this.props.hintStyle.box}
+                                width={this.props.hintWidth}
+                                height={this.props.hintHeight} />
+                        </g>
+                    </g>
+                );
+            }
+        } else {
+            return (
+                <g />
+            );
+        }
+    },
+
+    renderScatter() {
+        const series = this.props.series;
+        const timeScale = this.props.timeScale;
+        const yScale = this.props.yScale;
+
+        const points = [];
+        const hover = [];
+
+        let key = 1;
+        for (const event of series.events()) {
+            const t = event.timestamp();
+            const value = event.get(this.props.column);
+            const x = timeScale(t);
+            const y = yScale(value);
+            const radius = _.isFunction(this.props.radius) ?
+                this.props.radius(event) : this.props.radius;
+
+            const isHighlighted =
+                (this.state.hover &&
+                    Event.is(this.state.hover, event)) ||
+                (this.props.highlight &&
+                    Event.is(this.props.highlight, event));
+
+            const isSelected =
+                (this.props.selection &&
+                    Event.is(this.props.selection, event));
+
+            const providedStyle = this.props.style ?
+                this.props.style : {};
+            const styleMap = _.isFunction(this.props.style) ?
+                this.props.style(event) :
+                merge(true, defaultStyle, providedStyle);
+
+            let style = styleMap.normal;
+            if (isSelected) {
+                style = styleMap.selected;
+            } else if (isHighlighted) {
+                style = styleMap.hover;
+            }
+            
+            // Hover text
+            let text = `${value}`;
+            let hoverText;
+            if (isHighlighted) {
+                if (this.props.format && _.isString(this.props.format)) {
+                    const formatter = format(this.props.format);
+                    text = formatter(value);
+                } else if (_.isFunction(this.props.format)) {
+                    text = this.props.format(value);
+                }
+                
+                // const textStyle = styleMap.text;
+                console.log("hover");
+                hoverText = this.renderHint(t, x, y, [{label: "Wind", value: text}]);
+            }
+
+            if (hoverText) {
+                hover.push(hoverText);
+            }
+                   
+            points.push(
+                <circle
+                    key={key}
+                    cx={x}
+                    cy={y}
+                    r={radius}
+                    style={style}
+                    pointerEvents="none"
+                    clipPath={this.props.clipPathURL}
+                    onClick={e => this.handleClick(e, event)}
+                    onMouseLeave={() => this.handleMouseLeave()}
+                    onMouseMove={e => this.handleMouseMove(e, event)} />
+            );
+
+            key++;
         }
 
-    },
-
-    shouldComponentUpdate() {
-        return false;
+        return (
+            <g>
+                {points}
+                {hover}
+            </g>
+        );
     },
 
     render() {
         return (
-            <g></g>
+            <g>
+                {this.renderScatter()}
+            </g>
         );
     }
 });

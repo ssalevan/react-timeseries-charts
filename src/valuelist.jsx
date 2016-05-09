@@ -72,6 +72,8 @@ export default React.createClass({
             fill: "#bdbdbd"
         };
 
+        console.log(">>", this.props);
+
         const values = this.props.values.map((item, i) => {
             if (this.props.align === "left") {
                 return (

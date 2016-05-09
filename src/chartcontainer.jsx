@@ -313,8 +313,7 @@ export default React.createClass({
         React.Children.forEach(this.props.children, child => {
             if (child.type === ChartRow) {
                 const chartRow = child;
-                const rowKey = child.props.key ?
-                    child.props.key : `chart-row-row-${i}`;
+                const rowKey = `chart-row-row-${i}`;
                 const props = {
                     timeScale,
                     leftAxisWidths,

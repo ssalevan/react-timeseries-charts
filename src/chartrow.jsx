@@ -313,8 +313,6 @@ export default React.createClass({
                 React.Children.forEach(charts.props.children, chart => {
                     // Additional props for charts
                     const chartProps = {
-                        key: chart.props.key ?
-                                chart.props.key : `chart-${keyCount}`,
                         width: chartWidth,
                         height: innerHeight,
                         clipPathURL: this.state.clipPathURL,
@@ -324,7 +322,9 @@ export default React.createClass({
                     };
 
                     chartList.push(
-                        React.cloneElement(chart, chartProps)
+                        <g key={keyCount}>
+                            {React.cloneElement(chart, chartProps)}
+                        </g>
                     );
 
                     keyCount++;
@@ -344,7 +344,6 @@ export default React.createClass({
         React.Children.forEach(this.props.children, child => {
             if (child.type === Brush) {
                 const brushProps = {
-                    key: `brush-${keyCount}`,
                     width: chartWidth,
                     height: innerHeight,
                     timeScale: this.props.timeScale,
