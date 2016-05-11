@@ -80,29 +80,17 @@ function scaleAsString(scale) {
     return `${scale.domain()}-${scale.range()}`;
 }
 
-const RangeBar = React.createClass({
-
-    displayName: "RangeBar",
+class RangeBar extends React.Component {
 
     shouldComponentUpdate({ series, scale }) {
-        console.log("RangeBar: shouldComponentUpdate", series, scaleAsString(scale));
-        return false;
-
-        // const seriesChanged = !TimeSeries.is(this.props.series, nextProps.series);
-        // const scaleChanged = scaleAsString(this.props.scale) !== scaleAsString(nextProps.scale);
-        // console.log("Update?", seriesChanged, scaleChanged);
-        // return seriesChanged || scaleChanged;
-    },
+        const seriesChanged = !TimeSeries.is(this.props.series, series);
+        const scaleChanged = scaleAsString(this.props.scale) !== scaleAsString(scale);
+        console.log("Update?", seriesChanged, scaleChanged);
+        return seriesChanged || scaleChanged;
+    }
 
     render() {
 
-        console.log("Render RangeBar", this.props);
-
-        return (
-            <g />
-        );
-
-        /*
         const {
             series,
             column,
@@ -159,9 +147,8 @@ const RangeBar = React.createClass({
                 {barElementCenter}
             </g>
         );
-        */
     }
-});
+}
 
 /**
  * Render just the bars, with each bar being one series in the seriesList
@@ -276,8 +263,21 @@ const Bars = React.createClass({
                 */
                 case "range":
                     return (
-                        <g transform={transform}>
-                            <RangeBar />
+                        <g transform={transform} key={i}>
+                            <RangeBar
+                                series={series}
+                                column={column}
+                                bgstyle={rectStyleBackground}
+                                fgstyle={rectStyleCenter}
+                                style={style}
+                                scale={scale}
+                                size={size} />
+                            <Marker
+                                value={value}
+                                scale={scale}
+                                format={format}
+                                size={size}
+                                style={rectStyleValue} />
                         </g>
                     );
             }
@@ -446,7 +446,7 @@ const Row = React.createClass({
 
         return (
             <Flexbox
-                key={Math.random()}
+                key={this.props.rowNumber}
                 style={rowStyle}
                 flexDirection="row"
                 onMouseEnter={() => this.setState({hover: true})}
@@ -696,6 +696,7 @@ export default React.createClass({
         return seriesList.map((series, i) => (
             <Row
                 key={i}
+                rowNumber={i}
                 series={series}
                 display={display}
                 max={max}
